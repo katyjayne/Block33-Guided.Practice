@@ -1,4 +1,6 @@
 const pg = require("pg");
+const express = require("express");
+const app = express();
 
 const client = new pg.Client(
   process.env.DATABASE_URL || "postgres://localhost/acme_notes_categories_db"
@@ -35,7 +37,11 @@ const init = async () => {
       INSERT INTO notes(txt, category_id) VALUES('bar note 2', ( SELECT id FROM categories WHERE name='bar category'));
   `;
   await client.query(SQL);
-  console.log("data seeded.");
+  console.log("data seeded");
+  const port = process.env.PORT || 3000;
+  app.listen(port, () => {
+    console.log(`listening on port ${port}`);
+  });
 };
 
 init();
