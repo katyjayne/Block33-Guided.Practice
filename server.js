@@ -7,7 +7,61 @@ const client = new pg.Client(
   process.env.DATABASE_URL || "postgres://localhost/acme_notes_categories_db"
 );
 
+app.use(express.json());
 app.use(morgan("dev"));
+
+app.delete("/api/notes/:id", async (req, res, next) => {
+  try {
+    const SQL = `
+      DELETE FROM notes
+      WHERE id = $1
+    `;
+    await client.query(SQL, [req.params.id]);
+    res.sendStatus(204);
+  } catch (ex) {
+    next(ex);
+  }
+});
+
+app.post("/api/notes", async (req, res, next) => {
+  try {
+    const SQL = `
+      INSERT INTO notes(txt, category_id)
+      VALUES($1, $2)
+      RETURNING *
+    `;
+    const response = await client.query(SQL, [
+      req.body.txt,
+      req.body.category_id,
+    ]);
+    res.status(201).send(response.rows[0]);
+  } catch (ex) {
+    next(ex);
+  }
+});
+
+app.put("/api/notes/:id", async (req, res, next) => {
+  try {
+    const SQL = `
+      UPDATE notes
+      SET txt = $1, 
+      ranking = $2, 
+      updated_at = now(), 
+      category_id = $3
+      WHERE id = $4
+      RETURNING *
+    `;
+    const response = await client.query(SQL, [
+      req.body.txt,
+      req.body.ranking,
+      req.body.category_id,
+      req.params.id,
+    ]);
+    res.send(response.rows[0]);
+  } catch (ex) {
+    next(ex);
+  }
+});
 
 app.get("/api/notes", async (req, res, next) => {
   try {
@@ -33,6 +87,10 @@ app.get("/api/categories", async (req, res, next) => {
   } catch (ex) {
     next(ex);
   }
+});
+
+app.use((err, req, res, next) => {
+  res.status(err.status || 500).send({ error: err.message || err });
 });
 
 const init = async () => {
@@ -73,6 +131,13 @@ const init = async () => {
     console.log("curl commands to test application");
     console.log(`curl localhost:${port}/api/notes`);
     console.log(`curl localhost:${port}/api/categories`);
+    console.log(`curl -X DELETE localhost:${port}/api/notes/1`);
+    console.log(
+      `curl -X POST localhost:${port}/api/notes -d '{"txt": "another foo", "category_id": 1}' -H "Content-Type:application/json"`
+    );
+    console.log(
+      `curl -X PUT localhost:${port}/api/notes/1 -d '{"txt": "updated", "category_id": 3, "ranking":7}' -H "Content-Type:application/json"`
+    );
   });
 };
 
