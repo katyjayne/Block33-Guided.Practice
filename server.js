@@ -24,6 +24,18 @@ const init = async () => {
       category_id INTEGER REFERENCES categories(id) NOT NULL
     );
   `;
+  await client.query(SQL);
+  console.log("tables created");
+  SQL = `
+      INSERT INTO categories(name) VALUES('foo category');
+      INSERT INTO categories(name) VALUES('bar category');
+      INSERT INTO categories(name) VALUES('baz category');
+      INSERT INTO notes(txt, category_id) VALUES('foo note 1', ( SELECT id FROM categories WHERE name='foo category'));
+      INSERT INTO notes(txt, category_id) VALUES('bar note 1', ( SELECT id FROM categories WHERE name='bar category'));
+      INSERT INTO notes(txt, category_id) VALUES('bar note 2', ( SELECT id FROM categories WHERE name='bar category'));
+  `;
+  await client.query(SQL);
+  console.log("data seeded.");
 };
 
 init();
